@@ -30,6 +30,7 @@ body {
 }
 
 .headings--one-size {
+
   h1,
   h2,
   h3,
@@ -127,7 +128,8 @@ figure {
   }
 }
 
-code, kbd {
+code,
+kbd {
   font-family: 'Fira Code', Monaco, Consolas, Ubuntu Mono, monospace !important;
   font-feature-settings: normal;
   background: transparentize($accent, .8);
@@ -136,7 +138,8 @@ code, kbd {
   margin: 0 2px;
   font-size: .95rem;
 
-  code, kbd {
+  code,
+  kbd {
     background: transparent;
     padding: 0;
     margin: 0;
@@ -152,7 +155,7 @@ pre {
   border-top: 1px solid rgba(255, 255, 255, .1);
   border-bottom: 1px solid rgba(255, 255, 255, .1);
 
-  + pre {
+  +pre {
     border-top: 0;
     margin-top: -40px;
   }
@@ -263,7 +266,7 @@ ol {
   list-style: none;
   counter-reset: li;
 
-  > li {
+  >li {
     counter-increment: li;
 
     &:before {
@@ -275,10 +278,10 @@ ol {
       text-align: right;
     }
 
-    > ol {
+    >ol {
       margin-left: 38px;
 
-      > li {
+      >li {
         counter-increment: li;
 
         &:before {
@@ -297,24 +300,24 @@ mark {
 .container {
   display: flex;
   flex-direction: column;
-  padding: 40px;
-  max-width: 864px;
+  padding: 5%;
+  // max-width: 95%;
   min-height: 100vh;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  //border-right: 1px solid rgba(255, 255, 255, 0.1);
 
   &.full,
   &.center {
     border: none;
-    margin: 0 auto;
+    // margin: 0 auto;
   }
 
   &.full {
     max-width: 100%;
   }
 
-  @media ($phone) {
-    padding: 20px;
-  }
+  // @medias ($phone) {
+  //   padding: 20px;
+  // }
 
   @media print {
     display: initial;
@@ -342,5 +345,5 @@ hr {
 }
 
 sup {
- line-height: 0;
+  line-height: 0;
 }
