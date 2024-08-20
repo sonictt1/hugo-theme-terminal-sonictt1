@@ -1,3 +1,4 @@
+/* _header.scss */
 .header {
   display: flex;
   flex-direction: column;
@@ -35,7 +36,6 @@
   text-decoration: none;
   background: var(--accent);
   color: var(--background);
-  font-weight: bold;
   padding: 5px 10px;
 }
 

@@ -1,3 +1,4 @@
+/* _menu.scss */
 .navigation-menu {
   display: flex;
   align-items: flex-start;
@@ -100,7 +101,7 @@
 .menu--language-selector .menu__trigger {
   color: var(--accent);
   border: 2px solid;
-  margin-left: 5px;
+  margin-left: 10px;
   height: 100%;
   padding: 3px 8px;
   margin-bottom: 0 !important;

@@ -6,6 +6,9 @@ pagination.pagerSize = 5
 [markup.goldmark.renderer]
   unsafe = true
 
+[markup.goldmark.renderer]
+  unsafe = true
+
 [params]
   contentTypeName = "posts"
   showMenuItems = 2

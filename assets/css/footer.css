@@ -1,7 +1,8 @@
+/* _footer.scss */
 .footer {
   padding: 40px 0;
   flex-grow: 0;
-  opacity: 0.65;
+  opacity: 0.5;
 }
 
 .footer__inner {
@@ -9,6 +10,7 @@
   align-items: center;
   justify-content: space-between;
   margin: 0;
+  width: 760px;
   max-width: 100%;
 }
 
@@ -21,6 +23,7 @@
   flex-flow: row wrap;
   flex: 1;
   align-items: center;
+  font-size: 1rem;
   justify-content: center;
 }
 
