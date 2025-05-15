@@ -20,11 +20,11 @@
 {{ end }}
 <!-- Custom Terminal.css styles -->
 {{ if (fileExists "static/terminal.css") -}}
-  <link rel="stylesheet" href="{{ "/terminal.css" | absURL }}">
+  <link rel="stylesheet" href="/terminal.css">
 {{- end }}
 <!-- Custom CSS to override theme properties (/static/style.css) -->
 {{ if (fileExists "static/style.css") -}}
-  <link rel="stylesheet" href="{{ "/style.css" | absURL }}">
+  <link rel="stylesheet" href="/style.css">
 {{- end }}
 
 <!-- Icons -->
