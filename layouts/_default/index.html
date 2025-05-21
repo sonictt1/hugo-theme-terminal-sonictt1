@@ -16,6 +16,8 @@
   {{ end }}
   {{ $paginator := .Paginate (where $PageContext.RegularPages "Type" $contentTypeName) }}
   {{ partial "about-me-card.html" . }}
+  {{ partial "twitch-embed.html" (dict "channel" "sonictt1" "width" 400 "height" 300 "ctx" .) }}
+  obivous text
   {{ range $paginator.Pages }}
   <article class="post on-list rectangle">
     <h1 class="post-title">
