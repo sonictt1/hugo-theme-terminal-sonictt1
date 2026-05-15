@@ -1,0 +1,94 @@
+{{/*
+Shortcode: deck-table
+Parses a Magic: The Gathering decklist (plain text) and renders an HTML table.
+
+Usage (inline):
+{{< deck-table >}}
+4 Lightning Bolt
+3 Serra Angel
+Sideboard:
+2 Pyroblast
+{{< /deck-table >}}
+
+Usage (file):
+{{< deck-table file="static/decks/sample.deck" >}}
+*/}}
+
+{{ $file := .Get "file" }}
+{{ $text := "" }}
+
+{{ if gt (len (replaceRE `^\s+|\s+$` "" .Inner)) 0 }}
+  {{ $text = replaceRE `^\s+|\s+$` "" .Inner }}
+{{ else if $file }}
+  {{ $text = readFile $file }}
+{{ else }}
+  <div class="deck-table-error">No deck content provided to <code>deck-table</code> shortcode.</div>
+{{ end }}
+
+{{ if ne $text "" }}
+  {{ $text = replaceRE "\r\n" "\n" $text }}
+  {{ $lines := split $text "\n" }}
+  {{ $main := slice }}
+  {{ $side := slice }}
+  {{ $inSide := false }}
+
+  {{ range $i, $line := $lines }}
+    {{ $ln := replaceRE `^\s+|\s+$` "" $line }}
+    {{ if ne $ln "" }}
+      {{ $low := lower $ln }}
+      {{ if or (hasPrefix $low "sideboard:") (hasPrefix $low "sb:") }}
+        {{ $inSide = true }}
+        {{ $ln = replaceRE `(?i)^(sideboard:|sb:)\s*` "" $ln }}
+        {{ $ln = replaceRE `^\s+|\s+$` "" $ln }}
+      {{ end }}
+
+      {{ $count := "" }}
+      {{ $name := "" }}
+      {{ $m := replaceRE `^\s*([0-9]+)[xX]?\s+(.*\S)\s*$` "$1|$2" $ln }}
+      {{ if eq $m $ln }}
+        {{ $count = "1" }}
+        {{ $name = $ln }}
+      {{ else }}
+        {{ $parts := split $m "|" }}
+        {{ $count = index $parts 0 }}
+        {{ $name = index $parts 1 }}
+      {{ end }}
+
+      {{ if $inSide }}
+        {{ $side = $side | append (dict "count" $count "name" $name) }}
+      {{ else }}
+        {{ $main = $main | append (dict "count" $count "name" $name) }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+
+  <div class="deck-table-wrap">
+    {{ if gt (len $main) 0 }}
+      <h3>Deck</h3>
+      <table class="deck-table">
+        <thead>
+          <tr><th>Count</th><th>Card</th></tr>
+        </thead>
+        <tbody>
+          {{ range $main }}
+            <tr><td class="count">{{ .count }}</td><td class="card">{{ .name }}</td></tr>
+          {{ end }}
+        </tbody>
+      </table>
+    {{ end }}
+
+    {{ if gt (len $side) 0 }}
+      <h4>Sideboard</h4>
+      <table class="deck-table deck-sideboard">
+        <thead>
+          <tr><th>Count</th><th>Card</th></tr>
+        </thead>
+        <tbody>
+          {{ range $side }}
+            <tr><td class="count">{{ .count }}</td><td class="card">{{ .name }}</td></tr>
+          {{ end }}
+        </tbody>
+      </table>
+    {{ end }}
+  </div>
+{{ end }}

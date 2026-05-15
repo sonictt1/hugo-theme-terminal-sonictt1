@@ -1,7 +1,7 @@
 <!-- embed-target can be a channel, video, or collection -->
 <iframe
-    src="https://player.twitch.tv/?{{ .embed-target }}>&parent=streamernews.example.com"
-    height="{{.height}}"
-    width="{{.width}}"
+    src="https://player.twitch.tv/?channel={{ with .channel }}{{ . }}{{ else }}{{ index . "embed-target" }}{{ end }}&parent=streamernews.example.com"
+    height="{{ .height }}"
+    width="{{ .width }}"
     allowfullscreen>
 </iframe>

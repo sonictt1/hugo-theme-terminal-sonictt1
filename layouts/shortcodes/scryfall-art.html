@@ -1,0 +1,101 @@
+{{- /* scryfall-art shortcode (moved into theme)
+   Usage:
+     {{< scryfall-art name="Serra Angel" >}}
+     {{< scryfall-art name="Black Lotus" variant="png" class="card-art" link="false" exact="true" >}}
+     {{< scryfall-art set="SETCODE" number="COLLECTOR_NUMBER" >}}
+   Notes:
+     - If both `set` (or `set_code`) and `number` (or `collector_number`) are provided,
+       the shortcode will fetch that specific printing via `/cards/{set}/{number}`.
+     - Otherwise it will try named lookup (exact or fuzzy) by `name`.
+     - You can override the User-Agent with `user_agent` param.
+*/ -}}
+{{- $name := .Get "name" -}}
+{{- if not $name -}}
+  {{- $name = .Get 0 -}}
+{{- end -}}
+
+{{- $variant := .Get "variant" | default "art_crop" -}}
+{{- $exact := .Get "exact" | default "false" -}}
+{{- $link := .Get "link" | default "true" -}}
+{{- $class := .Get "class" | default "" -}}
+
+{{- $apiURL := "" -}}
+{{- /* Support selecting a specific printing by set code + collector number.
+     Aliases: set_code, collector_number */ -}}
+{{- $set := .Get "set" -}}
+{{- if not $set -}}
+  {{- $set = .Get "set_code" -}}
+{{- end -}}
+{{- $number := .Get "number" -}}
+{{- if not $number -}}
+  {{- $number = .Get "collector_number" -}}
+{{- end -}}
+
+{{- /* Scryfall prefers percent-encoded spaces (%20). Hugo's urlquery uses '+' for spaces,
+     so replace '+' with '%20' to avoid Bad Request responses. */ -}}
+{{- $escapedName := "" -}}
+{{- if $name -}}
+  {{- $escapedName = replace (urlquery $name) "+" "%20" -}}
+{{- end -}}
+
+{{- if and $set $number -}}
+  {{- $apiURL = printf "https://api.scryfall.com/cards/%s/%s" (urlquery (lower $set)) (urlquery $number) -}}
+{{- else if $name -}}
+  {{- if eq $exact "true" -}}
+    {{- $apiURL = printf "https://api.scryfall.com/cards/named?exact=%s" $escapedName -}}
+  {{- else -}}
+    {{- $apiURL = printf "https://api.scryfall.com/cards/named?fuzzy=%s" $escapedName -}}
+  {{- end -}}
+{{- end -}}
+
+{{- if eq $apiURL "" -}}
+  <span class="scryfall-art-missing">scryfall-art shortcode: missing `name` or `set`+`number`.</span>
+{{- else -}}
+  {{- $card := dict -}}
+  {{- $hasCard := false -}}
+  {{- $ua := .Get "user_agent" | default "hugo-scryfall/1.0 (contact@example.com)" -}}
+  {{- $opts := dict "headers" (dict "User-Agent" $ua "Accept" "application/json") -}}
+  {{- with resources.GetRemote $apiURL $opts -}}
+    {{- $raw := .Content -}}
+    {{- $c := transform.Unmarshal $raw -}}
+    {{- if $c -}}
+      {{- $card = $c -}}
+      {{- $hasCard = true -}}
+    {{- end -}}
+  {{- end -}}
+
+  {{- $alt := .Get "alt" -}}
+  {{- if not $alt -}}
+    {{- if $name -}}
+      {{- $alt = $name -}}
+    {{- else -}}
+      {{- $alt = printf "%s %s" $set $number -}}
+    {{- end -}}
+  {{- end -}}
+
+  {{- $img := "" -}}
+  {{- if $hasCard -}}
+    {{- with index $card "image_uris" -}}
+      {{- $img = index . $variant -}}
+    {{- else -}}
+      {{- with index $card "card_faces" -}}
+        {{- $first := index . 0 -}}
+        {{- with index $first "image_uris" -}}
+          {{- $img = index . $variant -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+
+  {{- if not $img -}}
+    <span class="scryfall-art-missing">Card art not found for "{{ if $name }}{{ $name }}{{ else }}{{ printf "%s %s" $set $number }}{{ end }}"</span>
+  {{- else -}}
+    {{- if eq $link "true" -}}
+      <a href="{{ index $card "scryfall_uri" }}" target="_blank" rel="noopener noreferrer">
+        <img src="{{ $img }}" alt="{{ $alt }}" loading="lazy" class="{{ $class }}">
+      </a>
+    {{- else -}}
+      <img src="{{ $img }}" alt="{{ $alt }}" loading="lazy" class="{{ $class }}">
+    {{- end -}}
+  {{- end -}}
+{{- end -}}

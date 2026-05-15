@@ -19,6 +19,7 @@
 - [Post archetype](#post-archetype)
 - [Add-ons](#add-ons)
 - [How to edit the theme](#how-to-edit)
+- [TODO: Document new shortcodes](#todo)
 - [Found a bug?](#bug)
 - [New cool idea or feature](#feature)
 - [License](#license)
@@ -284,6 +285,8 @@ See the default `post` file params supported by the theme — https://github.com
 - **Comments** — for adding comments to your blog posts please take a look at `layouts/partials/comments.html` https://github.com/panr/hugo-theme-terminal/blob/master/layouts/partials/comments.html.
 - **Extended Head** — please take a look at `layouts/partials/extended_head.html` https://github.com/panr/hugo-theme-terminal/blob/master/layouts/partials/extended_head.html
 - **Extended Footer** — please take a look at `layouts/partials/extended_footer.html` https://github.com/panr/hugo-theme-terminal/blob/master/layouts/partials/extended_footer.html
+
+**Decklist shortcode (TODO)**: A new `deck-table` shortcode was added to the theme to parse plain-text Magic: The Gathering decklists and render main deck + sideboard tables. See `FEATURE_SUMMARY-2026-05-14.md` in the theme folder for example usage, local URLs, and recommended README text. TODO: update this README with code examples and integration notes from that feature summary.
 
 ## How to edit the theme <a id="how-to-edit" />
 
