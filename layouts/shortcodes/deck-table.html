@@ -32,9 +32,31 @@ Usage (file):
   {{ $side := slice }}
   {{ $inSide := false }}
 
+  {{/* Detect an optional deck title on the first non-empty line. If present, record it
+      and skip that line when parsing cards. */}}
+  {{ $title := "" }}
+  {{ $firstIndex := -1 }}
+  {{ $firstLine := "" }}
   {{ range $i, $line := $lines }}
     {{ $ln := replaceRE `^\s+|\s+$` "" $line }}
-    {{ if ne $ln "" }}
+    {{ if and (ne $ln "") (eq $firstIndex -1) }}
+      {{ $firstIndex = $i }}
+      {{ $firstLine = $ln }}
+    {{ end }}
+  {{ end }}
+  {{ if ne $firstIndex -1 }}
+    {{ $mFirst := replaceRE `^\s*([0-9]+)[xX]?\s+(.*\S)\s*$` "$1|$2" $firstLine }}
+    {{ $lowFirst := lower $firstLine }}
+    {{ $isHeader := or (hasPrefix $lowFirst "sideboard:") (hasPrefix $lowFirst "sb:") (eq $lowFirst "deck") (eq $lowFirst "decklist") (eq $lowFirst "count") (eq $lowFirst "countcard") (eq $lowFirst "maindeck") (eq $lowFirst "sideboard") }}
+    {{ if and (eq $mFirst $firstLine) (not $isHeader) }}
+      {{ $title = replaceRE `(?i)^(deck|deck name|name|title)\s*[:\-]?\s*` "" $firstLine }}
+      {{ $title = replaceRE `^\s+|\s+$` "" $title }}
+    {{ end }}
+  {{ end }}
+
+  {{ range $i, $line := $lines }}
+    {{ $ln := replaceRE `^\s+|\s+$` "" $line }}
+    {{ if and (ne $ln "") (not (and (ne $title "") (eq $i $firstIndex))) }}
       {{ $low := lower $ln }}
       {{ if or (hasPrefix $low "sideboard:") (hasPrefix $low "sb:") }}
         {{ $inSide = true }}
@@ -42,16 +64,25 @@ Usage (file):
         {{ $ln = replaceRE `^\s+|\s+$` "" $ln }}
       {{ end }}
 
-      {{ $count := "" }}
-      {{ $name := "" }}
-      {{ $m := replaceRE `^\s*([0-9]+)[xX]?\s+(.*\S)\s*$` "$1|$2" $ln }}
-      {{ if eq $m $ln }}
-        {{ $count = "1" }}
-        {{ $name = $ln }}
-      {{ else }}
-        {{ $parts := split $m "|" }}
-        {{ $count = index $parts 0 }}
-        {{ $name = index $parts 1 }}
+      {{/* Skip the line if it was only the sideboard header (now empty). */}}
+      {{ if ne $ln "" }}
+        {{ $count := "" }}
+        {{ $name := "" }}
+        {{ $m := replaceRE `^\s*([0-9]+)[xX]?\s+(.*\S)\s*$` "$1|$2" $ln }}
+        {{ if eq $m $ln }}
+          {{ $count = "1" }}
+          {{ $name = $ln }}
+        {{ else }}
+          {{ $parts := split $m "|" }}
+          {{ $count = index $parts 0 }}
+          {{ $name = index $parts 1 }}
+        {{ end }}
+
+        {{ if $inSide }}
+          {{ $side = $side | append (dict "count" $count "name" $name) }}
+        {{ else }}
+          {{ $main = $main | append (dict "count" $count "name" $name) }}
+        {{ end }}
       {{ end }}
 
       {{ if $inSide }}
@@ -67,7 +98,7 @@ Usage (file):
       <h3>Deck</h3>
       <table class="deck-table">
         <thead>
-          <tr><th>Count</th><th>Card</th></tr>
+          <tr><th>#</th><th>{{ $title }}</th></tr>
         </thead>
         <tbody>
           {{ range $main }}
@@ -81,7 +112,7 @@ Usage (file):
       <h4>Sideboard</h4>
       <table class="deck-table deck-sideboard">
         <thead>
-          <tr><th>Count</th><th>Card</th></tr>
+          <tr><th>#</th><th>{{ $title }}</th></tr>
         </thead>
         <tbody>
           {{ range $side }}
