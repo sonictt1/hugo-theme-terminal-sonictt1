@@ -102,7 +102,12 @@ Usage (file):
         </thead>
         <tbody>
           {{ range $main }}
-            <tr><td class="count">{{ .count }}</td><td class="card">{{ .name }}</td></tr>
+            {{ $cardName := .name }}
+            {{ $q := $cardName | urlquery | replace "+" "%20" }}
+            <tr>
+              <td class="count">{{ .count }}</td>
+              <td class="card">{{ if ne $cardName "" }}<a class="deck-card-link" data-card="{{ $cardName }}" href="https://scryfall.com/search?q=!{{ $q }}" target="_blank" rel="noopener noreferrer">{{ $cardName }}</a>{{ end }}</td>
+            </tr>
           {{ end }}
         </tbody>
       </table>
@@ -116,7 +121,12 @@ Usage (file):
         </thead>
         <tbody>
           {{ range $side }}
-            <tr><td class="count">{{ .count }}</td><td class="card">{{ .name }}</td></tr>
+            {{ $cardName := .name }}
+            {{ $q := $cardName | urlquery | replace "+" "%20" }}
+            <tr>
+              <td class="count">{{ .count }}</td>
+              <td class="card">{{ if ne $cardName "" }}<a class="deck-card-link" data-card="{{ $cardName }}" href="https://scryfall.com/search?q=!{{ $q }}" target="_blank" rel="noopener noreferrer">{{ $cardName }}</a>{{ end }}</td>
+            </tr>
           {{ end }}
         </tbody>
       </table>

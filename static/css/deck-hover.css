@@ -1,0 +1,16 @@
+#deck-card-tooltip{
+  position: absolute;
+  z-index: 9999;
+  display: none;
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: #333;
+  padding: 0 6px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  max-width: 320px;
+}
+#deck-card-tooltip img{
+  display: block;
+  max-width: 280px;
+  height: auto;
+}
