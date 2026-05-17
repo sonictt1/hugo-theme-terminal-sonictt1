@@ -397,6 +397,14 @@ hr {
   height: 2px;
 }
 
+/* Social icon tweaks: remove image border and align inline with text */
+.social-logo {
+  border: none;
+  padding: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 /* One Heading Size */
 .headings--one-size h1,
 .headings--one-size h2,

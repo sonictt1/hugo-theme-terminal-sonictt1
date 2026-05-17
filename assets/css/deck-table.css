@@ -53,6 +53,18 @@
 .commander-cell { width: 50%; }
 .commander-cell.empty { background: transparent; }
 .commander-name { text-align: left; margin-bottom: 0.5rem; color: var(--accent); }
-.commander-name .deck-card-link { text-decoration: none; color: inherit; }
+.commander-name .deck-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: -webkit-box; /* enable line-clamp */
+  -webkit-line-clamp: 2; /* limit to two lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* ensure a consistent two-line height so images align */
+  line-height: 1.2;
+  min-height: calc(1.2em * 2);
+  max-height: calc(1.2em * 2);
+}
 .commander-art-wrap { text-align: center; }
-.commander-art { display: inline-block; max-width: 90%; max-height: 320px; width: auto; height: auto; border-radius: 4px; margin: 0.25rem auto 0 auto; }
+.commander-art { display: inline-block; max-width: 90%; max-height: 320px; width: auto; height: auto; border-radius: 4px; margin: 0.25rem auto 0 auto; vertical-align: top; }
