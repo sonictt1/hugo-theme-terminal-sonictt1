@@ -1,0 +1,58 @@
+/* Deck table shortcode styles */
+.deck-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+.deck-table th,
+.deck-table td {
+  border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+}
+.deck-table th {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--foreground);
+  font-weight: 700;
+}
+.deck-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--foreground) 3%, transparent);
+}
+.deck-table .count {
+  width: 5ch;
+}
+
+/* Mana symbol styling used by deck-table shortcode */
+.mana {
+  display: inline-block;
+  min-width: 1.25em;
+  height: 1.25em;
+  line-height: 1.25em;
+  text-align: center;
+  border-radius: 0.25rem;
+  padding: 0 .25rem;
+  margin-right: 0.2rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #fff;
+  background: color-mix(in srgb, var(--foreground) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+.mana-cell { text-align: right; white-space: nowrap; }
+.mana-W { background: #fff; color: #111; border-color: rgba(0,0,0,0.08); }
+.mana-U { background: #2f6df6; color: #fff; }
+.mana-B { background: #111; color: #fff; }
+.mana-R { background: #f54927; color: #fff; }
+.mana-G { background: #2db34a; color: #fff; }
+.mana-C { background: #9aa0a6; color: #fff; }
+
+/* Commander table layout: two commanders per row, name left, art centered below */
+.deck-commander { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+.deck-commander th { border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.6rem; vertical-align: top; background: transparent; font-weight: 400; }
+.commander-cell { width: 50%; }
+.commander-cell.empty { background: transparent; }
+.commander-name { text-align: left; margin-bottom: 0.5rem; color: var(--accent); }
+.commander-name .deck-card-link { text-decoration: none; color: inherit; }
+.commander-art-wrap { text-align: center; }
+.commander-art { display: inline-block; max-width: 90%; max-height: 320px; width: auto; height: auto; border-radius: 4px; margin: 0.25rem auto 0 auto; }

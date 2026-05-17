@@ -138,28 +138,3 @@ h6:hover .hanchor {
     border-width: 10px;
   }
 }
-
-/* Deck table styles */
-.deck-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1rem 0;
-  font-size: 0.95rem;
-}
-.deck-table th,
-.deck-table td {
-  border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
-  padding: 0.35rem 0.6rem;
-  text-align: left;
-}
-.deck-table th {
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  color: var(--foreground);
-  font-weight: 700;
-}
-.deck-table tbody tr:nth-child(even) {
-  background: color-mix(in srgb, var(--foreground) 3%, transparent);
-}
-.deck-table .count {
-  width: 5ch;
-}

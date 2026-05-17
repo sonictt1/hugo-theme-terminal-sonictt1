@@ -1,17 +1,18 @@
 {{/*
 Shortcode: deck-table
-Parses a Magic: The Gathering decklist (plain text) and renders an HTML table.
+Parses a Magic: The Gathering decklist. If a `file` is provided and ends with
+.deck the file is expected to be CSV with schema:
 
-Usage (inline):
-{{< deck-table >}}
-4 Lightning Bolt
-3 Serra Angel
-Sideboard:
-2 Pyroblast
-{{< /deck-table >}}
+  quantity,card name,category,scryfall_id(optional)
 
-Usage (file):
-{{< deck-table file="static/decks/sample.deck" >}}
+The shortcode renders:
+- Commander cards (category == "Commander") into a separate table above the deck,
+  each commander rendered as a header row.
+- Main deck and Sideboard tables. A right-most column shows the mana cost (looked up
+  from Scryfall at build time where possible and rendered as colored mana symbols).
+
+If a Scryfall ID is present in the CSV, it is used for Scryfall API lookups (hover art
+and mana). Otherwise the card name is used for Scryfall named lookup.
 */}}
 
 {{ $file := .Get "file" }}
@@ -30,102 +31,208 @@ Usage (file):
   {{ $lines := split $text "\n" }}
   {{ $main := slice }}
   {{ $side := slice }}
-  {{ $inSide := false }}
+  {{ $comm := slice }}
 
-  {{/* Detect an optional deck title on the first non-empty line. If present, record it
-      and skip that line when parsing cards. */}}
-  {{ $title := "" }}
-  {{ $firstIndex := -1 }}
-  {{ $firstLine := "" }}
-  {{ range $i, $line := $lines }}
-    {{ $ln := replaceRE `^\s+|\s+$` "" $line }}
-    {{ if and (ne $ln "") (eq $firstIndex -1) }}
-      {{ $firstIndex = $i }}
-      {{ $firstLine = $ln }}
-    {{ end }}
-  {{ end }}
-  {{ if ne $firstIndex -1 }}
-    {{ $mFirst := replaceRE `^\s*([0-9]+)[xX]?\s+(.*\S)\s*$` "$1|$2" $firstLine }}
-    {{ $lowFirst := lower $firstLine }}
-    {{ $isHeader := or (hasPrefix $lowFirst "sideboard:") (hasPrefix $lowFirst "sb:") (eq $lowFirst "deck") (eq $lowFirst "decklist") (eq $lowFirst "count") (eq $lowFirst "countcard") (eq $lowFirst "maindeck") (eq $lowFirst "sideboard") }}
-    {{ if and (eq $mFirst $firstLine) (not $isHeader) }}
-      {{ $title = replaceRE `(?i)^(deck|deck name|name|title)\s*[:\-]?\s*` "" $firstLine }}
-      {{ $title = replaceRE `^\s+|\s+$` "" $title }}
-    {{ end }}
-  {{ end }}
+  {{/* CSV .deck parsing (handles quoted fields containing commas) */}}
+  {{ if and $file (hasSuffix $file ".deck") }}
+    {{ range $i, $line := $lines }}
+      {{ $ln := replaceRE `^\s+|\s+$` "" $line }}
+      {{ if eq $ln "" }}{{ continue }}{{ end }}
 
-  {{ range $i, $line := $lines }}
-    {{ $ln := replaceRE `^\s+|\s+$` "" $line }}
-    {{ if and (ne $ln "") (not (and (ne $title "") (eq $i $firstIndex))) }}
+      {{ $tokens := findRE `"[^"]*"|[^,]+` $ln }}
+      {{ $fields := slice }}
+      {{ range $tokens }}
+        {{ $tok := replaceRE `^\s+|\s+$` "" . }}
+        {{ if and (hasPrefix $tok "\"") (hasSuffix $tok "\"") }}
+          {{ $tok = replaceRE `^\"|\"$` "" $tok }}
+          {{ $tok = replace $tok `""` `"` }}
+        {{ end }}
+        {{ $fields = $fields | append $tok }}
+      {{ end }}
+
+      {{ $count := "1" }}
+      {{ if ge (len $fields) 1 }}{{ $count = index $fields 0 }}{{ end }}
+      {{ $name := "" }}
+      {{ if ge (len $fields) 2 }}{{ $name = index $fields 1 }}{{ end }}
+      {{ $category := "" }}
+      {{ $scryid := "" }}
+
+      {{ if ge (len $fields) 4 }}
+        {{ $category = index $fields 2 }}
+        {{ $scryid = index $fields 3 }}
+      {{ else if eq (len $fields) 3 }}
+        {{ $third := index $fields 2 }}
+        {{ if findRE `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$` $third }}
+          {{ $scryid = $third }}
+        {{ else }}
+          {{ $category = $third }}
+        {{ end }}
+      {{ end }}
+
+      {{ $lc := lower $category }}
+      {{ if eq $lc "sideboard" }}
+        {{ $side = $side | append (dict "count" $count "name" $name "category" $category "scryfall_id" $scryid) }}
+      {{ else if eq $lc "commander" }}
+        {{ $comm = $comm | append (dict "count" $count "name" $name "category" $category "scryfall_id" $scryid) }}
+      {{ else }}
+        {{ $main = $main | append (dict "count" $count "name" $name "category" $category "scryfall_id" $scryid) }}
+      {{ end }}
+    {{ end }}
+  {{ else }}
+    {{/* Plain text parsing (backwards compatible) */}}
+    {{ range $i, $line := $lines }}
+      {{ $ln := replaceRE `^\s+|\s+$` "" $line }}
+      {{ if eq $ln "" }}{{ continue }}{{ end }}
       {{ $low := lower $ln }}
       {{ if or (hasPrefix $low "sideboard:") (hasPrefix $low "sb:") }}
-        {{ $inSide = true }}
         {{ $ln = replaceRE `(?i)^(sideboard:|sb:)\s*` "" $ln }}
         {{ $ln = replaceRE `^\s+|\s+$` "" $ln }}
-      {{ end }}
-
-      {{/* Skip the line if it was only the sideboard header (now empty). */}}
-      {{ if ne $ln "" }}
-        {{ $count := "" }}
-        {{ $name := "" }}
-        {{ $m := replaceRE `^\s*([0-9]+)[xX]?\s+(.*\S)\s*$` "$1|$2" $ln }}
-        {{ if eq $m $ln }}
-          {{ $count = "1" }}
-          {{ $name = $ln }}
-        {{ else }}
-          {{ $parts := split $m "|" }}
-          {{ $count = index $parts 0 }}
-          {{ $name = index $parts 1 }}
-        {{ end }}
-
-        {{ if $inSide }}
-          {{ $side = $side | append (dict "count" $count "name" $name) }}
-        {{ else }}
-          {{ $main = $main | append (dict "count" $count "name" $name) }}
-        {{ end }}
-      {{ end }}
-
-      {{ if $inSide }}
-        {{ $side = $side | append (dict "count" $count "name" $name) }}
+        {{ $parts := split (replaceRE `^\s*([0-9]+)[xX]?\s+(.*\S)\s*$` "$1|$2" $ln) "|" }}
+        {{ $count := index $parts 0 }}
+        {{ $name := index $parts 1 }}
+        {{ $side = $side | append (dict "count" $count "name" $name "category" "sideboard" "scryfall_id" "") }}
       {{ else }}
-        {{ $main = $main | append (dict "count" $count "name" $name) }}
+        {{ $parts := split (replaceRE `^\s*([0-9]+)[xX]?\s+(.*\S)\s*$` "$1|$2" $ln) "|" }}
+        {{ $count := index $parts 0 }}
+        {{ $name := index $parts 1 }}
+        {{ $main = $main | append (dict "count" $count "name" $name "category" "" "scryfall_id" "") }}
       {{ end }}
     {{ end }}
   {{ end }}
 
-  <div class="deck-table-wrap">
-    {{ if gt (len $main) 0 }}
-      <h3>Deck</h3>
-      <table class="deck-table">
-        <thead>
-          <tr><th>#</th><th>{{ $title }}</th></tr>
-        </thead>
+  {{/* Group main deck by category and track category presence */}}
+  {{ $mainByCategory := dict }}
+  {{ $categoryOrder := slice }}
+  {{ $hasNoCat := false }}
+  {{ $hasCat := false }}
+
+  {{ range $main }}
+    {{ $cat := replaceRE `^\s+|\s+$` "" .category }}
+    {{ if eq $cat "" }}
+      {{ $hasNoCat = true }}
+      {{ $cat = "<No Category>" }}
+    {{ else }}
+      {{ $hasCat = true }}
+    {{ end }}
+    
+    {{/* Check if category exists by trying to access it */}}
+    {{ $exists := false }}
+    {{ range $categoryOrder }}
+      {{ if eq . $cat }}
+        {{ $exists = true }}
+      {{ end }}
+    {{ end }}
+    
+    {{ if not $exists }}
+      {{ $mainByCategory = merge $mainByCategory (dict $cat (slice)) }}
+      {{ $categoryOrder = $categoryOrder | append $cat }}
+    {{ end }}
+    
+    {{ $cardsInCat := index $mainByCategory $cat }}
+    {{ $cardsInCat = $cardsInCat | append . }}
+    {{ $mainByCategory = merge $mainByCategory (dict $cat $cardsInCat) }}
+  {{ end }}
+
+  {{/* Determine if we should render by category (show separate tables) or as single deck */}}
+  {{/* Render by category if: (1) any card has a category, OR (2) there's a mix of categorized and non-categorized */}}
+  {{ $renderByCategory := or $hasCat (and $hasNoCat $hasCat) }}
+
+  <div class="deck-table-wrap" id="deck">
+    {{ if gt (len $comm) 0 }}
+      <h3>Commander</h3>
+      <table class="deck-table deck-commander">
         <tbody>
-          {{ range $main }}
-            {{ $cardName := .name }}
-            {{ $q := $cardName | urlquery | replace "+" "%20" }}
-            <tr>
-              <td class="count">{{ .count }}</td>
-              <td class="card">{{ if ne $cardName "" }}<a class="deck-card-link" data-card="{{ $cardName }}" href="https://scryfall.com/search?q=!{{ $q }}" target="_blank" rel="noopener noreferrer">{{ $cardName }}</a>{{ end }}</td>
-            </tr>
+          {{ range $i, $c := $comm }}
+            {{ if eq (mod $i 2) 0 }}
+              <tr>
+                <th class="commander-cell">
+                  {{ $cardName := replaceRE `^\s+|\s+$` "" $c.name }}
+                  {{ if ne $cardName "" }}
+                    {{ $q := $cardName | urlquery | replace "+" "%20" }}
+                    <div class="commander-name"><a class="deck-card-link" data-card="{{ $cardName }}" {{ if $c.scryfall_id }}data-scry-id="{{ $c.scryfall_id }}"{{ end }} href="https://scryfall.com/search?q=!{{ $q }}" target="_blank" rel="noopener noreferrer">{{ $cardName }}</a></div>
+                    <div class="commander-art-wrap"><a href="https://scryfall.com/search?q=!{{ $q }}" target="_blank" rel="noopener noreferrer"><img class="commander-art" alt="{{ $cardName }}" data-card="{{ $cardName }}" {{ if $c.scryfall_id }}data-scry-id="{{ $c.scryfall_id }}"{{ end }}></a></div>
+                  {{ end }}
+                </th>
+
+                {{ $next := add $i 1 }}
+                {{ if lt $next (len $comm) }}
+                  {{ $c2 := index $comm $next }}
+                  <th class="commander-cell">
+                    {{ $cardName2 := replaceRE `^\s+|\s+$` "" $c2.name }}
+                    {{ if ne $cardName2 "" }}
+                      {{ $q2 := $cardName2 | urlquery | replace "+" "%20" }}
+                      <div class="commander-name"><a class="deck-card-link" data-card="{{ $cardName2 }}" {{ if $c2.scryfall_id }}data-scry-id="{{ $c2.scryfall_id }}"{{ end }} href="https://scryfall.com/search?q=!{{ $q2 }}" target="_blank" rel="noopener noreferrer">{{ $cardName2 }}</a></div>
+                      <div class="commander-art-wrap"><a href="https://scryfall.com/search?q=!{{ $q2 }}" target="_blank" rel="noopener noreferrer"><img class="commander-art" alt="{{ $cardName2 }}" data-card="{{ $cardName2 }}" {{ if $c2.scryfall_id }}data-scry-id="{{ $c2.scryfall_id }}"{{ end }}></a></div>
+                    {{ end }}
+                  </th>
+                {{ else }}
+                  <th class="commander-cell empty"></th>
+                {{ end }}
+              </tr>
+            {{ end }}
           {{ end }}
         </tbody>
       </table>
+    {{ end }}
+
+    {{ if gt (len $main) 0 }}
+      {{ if $renderByCategory }}
+        {{/* Render each category as its own table */}}
+        {{ range $cat := $categoryOrder }}
+          {{ $cardsInCat := index $mainByCategory $cat }}
+          <h3>{{ $cat }}</h3>
+          <table class="deck-table">
+            <thead>
+              <tr><th>#</th><th>Card</th>{{ if ne $cat "Land" }}<th>Mana</th>{{ end }}</tr>
+            </thead>
+            <tbody>
+              {{ range $cardsInCat }}
+                <tr>
+                  <td class="count">{{ .count }}</td>
+                  {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+                  <td class="card">{{ if ne $safeName "" }}<a class="deck-card-link" data-card="{{ $safeName }}" {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }} href="https://scryfall.com/search?q=!{{ ($safeName | urlquery | replace "+" "%20") }}" target="_blank" rel="noopener noreferrer">{{ $safeName }}</a>{{ end }}</td>
+                  {{ if ne $cat "Land" }}<td class="mana-cell">{{/* Client-side fetch populates mana */}}</td>{{ end }}
+                </tr>
+              {{ end }}
+            </tbody>
+          </table>
+        {{ end }}
+      {{ else }}
+        {{/* Render as single deck table (no categories or all have categories) */}}
+        <h3>Deck</h3>
+        <table class="deck-table">
+          <thead>
+            <tr><th>#</th><th>Card</th><th>Mana</th></tr>
+          </thead>
+          <tbody>
+            {{ range $main }}
+              <tr>
+                <td class="count">{{ .count }}</td>
+                {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+                <td class="card">{{ if ne $safeName "" }}<a class="deck-card-link" data-card="{{ $safeName }}" {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }} href="https://scryfall.com/search?q=!{{ ($safeName | urlquery | replace "+" "%20") }}" target="_blank" rel="noopener noreferrer">{{ $safeName }}</a>{{ end }}</td>
+                <td class="mana-cell">{{ if eq (lower .category) "land" }}N/A{{ end }}</td>
+              </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      {{ end }}
     {{ end }}
 
     {{ if gt (len $side) 0 }}
       <h4>Sideboard</h4>
       <table class="deck-table deck-sideboard">
         <thead>
-          <tr><th>#</th><th>{{ $title }}</th></tr>
+          <tr><th>#</th><th>Card</th><th>Mana</th></tr>
         </thead>
         <tbody>
           {{ range $side }}
-            {{ $cardName := .name }}
-            {{ $q := $cardName | urlquery | replace "+" "%20" }}
             <tr>
               <td class="count">{{ .count }}</td>
-              <td class="card">{{ if ne $cardName "" }}<a class="deck-card-link" data-card="{{ $cardName }}" href="https://scryfall.com/search?q=!{{ $q }}" target="_blank" rel="noopener noreferrer">{{ $cardName }}</a>{{ end }}</td>
+              {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+              <td class="card">{{ if ne $safeName "" }}<a class="deck-card-link" data-card="{{ $safeName }}" {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }} href="https://scryfall.com/search?q=!{{ ($safeName | urlquery | replace "+" "%20") }}" target="_blank" rel="noopener noreferrer">{{ $safeName }}</a>{{ end }}</td>
+              <td class="mana-cell">
+                {{/* Mana display skipped at build time. Client-side hover fetches card details. */}}
+              </td>
             </tr>
           {{ end }}
         </tbody>
