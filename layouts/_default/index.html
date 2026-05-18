@@ -15,54 +15,80 @@
   {{ $PageContext = .Site }}
   {{ end }}
   {{ partial "about-me-card.html" . }}
-  {{ $paginator := .Paginate (where $PageContext.RegularPages "Type" $contentTypeName) }}
-  {{ range $paginator.Pages }}
-  <article class="post on-list rectangle">
-    <h1 class="post-title">
-      <a href="{{ .Permalink }}">{{ .Title | markdownify }}</a>
-    </h1>
 
-    <div class="post-meta">
-      {{- if .Date -}}
-      <time class="post-date">
-        {{- .Date.Format "2006-01-02" -}}
-      </time>
-      {{- end -}}
-      {{- with .Params.Author -}}
-      <span class="post-author">{{ . }}</span>
-      {{- end -}}
-    </div>
-
-    {{ if .Params.tags }}
-    <span class="post-tags">
-      {{ range .Params.tags }}
-      #<a href="{{ (urlize (printf " tags/%s/" . )) | absLangURL }}">
-        {{- . -}}
-      </a>&nbsp;
+  {{/* Combine regular posts and deck data */}}
+  {{ $allContent := slice }}
+  
+  {{/* Add regular posts with normalized date field */}}
+  {{ range where $PageContext.RegularPages "Type" $contentTypeName }}
+    {{ $allContent = $allContent | append (dict "page" . "isDeck" false "date" .Date) }}
+  {{ end }}
+  
+  {{/* Add decks from data file with normalized date field */}}
+  {{ with (index $.Site.Data "decks") }}
+    {{ if .decks }}
+      {{ range .decks }}
+        {{ $allContent = $allContent | append (dict "deckData" . "isDeck" true "date" .date) }}
       {{ end }}
-    </span>
     {{ end }}
+  {{ end }}
+  
+  {{/* Sort combined content by date (descending) using Hugo's sort function */}}
+  {{ $sortedItems := sort $allContent "date" "desc" }}
+  
+  {{ range $sortedItems }}
+  <article class="post on-list rectangle">
+    {{ if .isDeck }}
+      {{/* Render deck item */}}
+      {{ partial "deck-article-preview.html" (dict "deck" .deckData "titleLevel" "h1") }}
+    {{ else }}
+      {{/* Render regular post item */}}
+      {{ $post := .page }}
+      <h1 class="post-title">
+        <a href="{{ $post.Permalink }}">{{ $post.Title | markdownify }}</a>
+      </h1>
 
-    {{ partial "cover.html" . }}
+      <div class="post-meta">
+        {{- if $post.Date -}}
+        <time class="post-date">
+          {{- $post.Date.Format "2006-01-02" -}}
+        </time>
+        {{- end -}}
+        {{- with $post.Params.Author -}}
+        <span class="post-author">{{ . }}</span>
+        {{- end -}}
+      </div>
 
-    <div class="post-content">
-      {{ if .Params.showFullContent }}
-      {{ .Content }}
-      {{ else if .Description }}
-      {{ .Description | markdownify }}
-      {{ else }}
-      {{ .Summary }}
+      {{ if $post.Params.tags }}
+      <span class="post-tags">
+        {{ range $post.Params.tags }}
+        #<a href="{{ (urlize (printf " tags/%s/" . )) | absLangURL }}">
+          {{- . -}}
+        </a>&nbsp;
+        {{ end }}
+      </span>
       {{ end }}
-    </div>
 
-    {{ if not .Params.showFullContent }}
-    <div>
-      <a class="read-more button" href="{{.RelPermalink}}">{{ $.Site.Params.ReadMore }} →</a>
-    </div>
+      {{ partial "cover.html" $post }}
+
+      <div class="post-content">
+        {{ if $post.Params.showFullContent }}
+        {{ $post.Content }}
+        {{ else if $post.Description }}
+        {{ $post.Description | markdownify }}
+        {{ else }}
+        {{ $post.Summary }}
+        {{ end }}
+      </div>
+
+      {{ if not $post.Params.showFullContent }}
+      <div>
+        <a class="read-more button" href="{{$post.RelPermalink}}">{{ $.Site.Params.ReadMore }} →</a>
+      </div>
+      {{ end }}
     {{ end }}
   </article>
   {{ end }}
 
-  {{ partial "pagination.html" . }}
 </div>
 {{ end }}

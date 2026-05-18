@@ -51,6 +51,7 @@
 .deck-commander { width: 100%; border-collapse: collapse; margin: 1rem 0; }
 .deck-commander th { border: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent); padding: 0.6rem; vertical-align: top; background: transparent; font-weight: 400; }
 .commander-cell { width: 50%; }
+.commander-cell.single { width: auto; margin: 0; }
 .commander-cell.empty { background: transparent; }
 .commander-name { text-align: left; margin-bottom: 0.5rem; color: var(--accent); }
 .commander-name .deck-card-link {
@@ -67,4 +68,96 @@
   max-height: calc(1.2em * 2);
 }
 .commander-art-wrap { text-align: center; }
-.commander-art { display: inline-block; max-width: 90%; max-height: 320px; width: auto; height: auto; border-radius: 4px; margin: 0.25rem auto 0 auto; vertical-align: top; }
+.commander-art { display: block; max-width: 95%; max-height: 320px; width: auto; height: auto; border-radius: 4px; margin: 0.25rem auto 0 auto; }
+
+/* Deck preview table variants */
+.deck-table.deck-preview { 
+  margin: 1rem 0;
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.deck-preview-columns {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1rem 0;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+/* Center the two-column main-card preview under commanders */
+.deck-preview-under-commander {
+  justify-content: center;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.deck-table.deck-preview-compact {
+  font-size: 0.85rem;
+  margin: 1rem 0;
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.deck-table.deck-preview-compact th,
+.deck-table.deck-preview-compact td {
+  padding: 0.25rem 0.4rem;
+  font-size: 0.85rem;
+}
+
+.deck-table.deck-preview-compact .count {
+  width: 4ch;
+}
+
+.deck-table.deck-preview-compact .mana-cell {
+  display: none;
+}
+
+.deck-table.deck-preview-full {
+  width: 100%;
+}
+
+/* Single commander with main deck cards alongside */
+.commander-preview-row {
+  display: flex !important;
+  gap: 0.9375rem;
+  margin: 0.625rem 0;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.deck-table.deck-commander-single {
+  flex: 1 1 50%;
+  margin: 0;
+  width: auto;
+  min-width: 220px;
+  font-size: 0.95rem;
+}
+
+.deck-table.deck-preview-alongside {
+  flex: 1 1 50%;
+  margin: 0;
+  width: auto;
+  min-width: 220px;
+}
+
+.deck-preview-empty {
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+  font-style: italic;
+  margin: 1rem 0;
+}
+
+/* Show deck format next to date in previews */
+.post-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.deck-format {
+  color: var(--accent);
+  font-weight: 700;
+}
