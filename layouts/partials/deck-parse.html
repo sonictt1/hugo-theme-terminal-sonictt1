@@ -1,0 +1,86 @@
+{{/*
+  deck-parse.html
+
+  Parses a CSV .deck file and extracts card lists and metadata.
+
+  Input (dict):
+    .file  string  Path to the .deck file (e.g. "static/decks/my-deck.deck")
+
+  Returns (dict):
+    .comm    []card  Commander cards
+    .main    []card  Main deck cards
+    .side    []card  Sideboard cards
+    .format  string  Format field from file metadata (e.g. "commander")
+
+  card schema: {count, name, category, scryfall_id}
+
+  Lines whose first CSV field is not a plain integer are silently skipped,
+  which filters out metadata lines such as "format:", "description:", "tags:", etc.
+*/}}
+{{ $file := .file | default "" }}
+{{ $comm := slice }}
+{{ $main := slice }}
+{{ $side := slice }}
+{{ $format := "" }}
+
+{{ if ne $file "" }}
+  {{ $text := readFile $file }}
+  {{ $text = replaceRE "\r\n" "\n" $text }}
+
+  {{/* Extract format metadata (before splitting into lines) */}}
+  {{ $formatMatches := findRE `(?m)^format\s*:\s*"[^"]+"|(?m)^format\s*:\s*[^\n]+` $text }}
+  {{ if gt (len $formatMatches) 0 }}
+    {{ $format = replaceRE `^\s+|\s+$` "" (replaceRE `(?i)^format\s*:\s*\"?|\"?$` "" (index $formatMatches 0)) }}
+  {{ end }}
+
+  {{ $lines := split $text "\n" }}
+  {{ range $line := $lines }}
+    {{ $ln := replaceRE `^\s+|\s+$` "" $line }}
+    {{ if eq $ln "" }}{{ continue }}{{ end }}
+
+    {{ $tokens := findRE `"[^"]*"|[^,]+` $ln }}
+    {{ $fields := slice }}
+    {{ range $tokens }}
+      {{ $tok := replaceRE `^\s+|\s+$` "" . }}
+      {{ if and (hasPrefix $tok "\"") (hasSuffix $tok "\"") }}
+        {{ $tok = replaceRE `^\"|\"$` "" $tok }}
+        {{ $tok = replace $tok `""` `"` }}
+      {{ end }}
+      {{ $fields = $fields | append $tok }}
+    {{ end }}
+
+    {{ $count := "" }}
+    {{ if ge (len $fields) 1 }}{{ $count = index $fields 0 }}{{ end }}
+
+    {{/* Skip non-card lines (metadata, YAML list entries, blank after trim) */}}
+    {{ if not (findRE `^\d+$` $count) }}{{ continue }}{{ end }}
+
+    {{ $name := "" }}
+    {{ if ge (len $fields) 2 }}{{ $name = index $fields 1 }}{{ end }}
+    {{ $category := "" }}
+    {{ $scryid := "" }}
+
+    {{ if ge (len $fields) 4 }}
+      {{ $category = index $fields 2 }}
+      {{ $scryid = index $fields 3 }}
+    {{ else if eq (len $fields) 3 }}
+      {{ $third := index $fields 2 }}
+      {{ if findRE `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$` $third }}
+        {{ $scryid = $third }}
+      {{ else }}
+        {{ $category = $third }}
+      {{ end }}
+    {{ end }}
+
+    {{ $lc := lower $category }}
+    {{ if eq $lc "commander" }}
+      {{ $comm = $comm | append (dict "count" $count "name" $name "category" $category "scryfall_id" $scryid) }}
+    {{ else if or (eq $lc "sideboard") (eq $lc "sb") }}
+      {{ $side = $side | append (dict "count" $count "name" $name "category" $category "scryfall_id" $scryid) }}
+    {{ else }}
+      {{ $main = $main | append (dict "count" $count "name" $name "category" $category "scryfall_id" $scryid) }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{ return (dict "comm" $comm "main" $main "side" $side "format" $format) }}

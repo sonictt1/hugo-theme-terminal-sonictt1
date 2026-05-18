@@ -1,0 +1,240 @@
+{{/*
+  deck-preview-table.html
+  
+  Renders a card preview table for use on home page and decks list.
+  
+  Context variables expected:
+    .cards: slice of card objects with 'count', 'name', 'category', 'scryfall_id'
+    .isCommander: boolean, if true render as commander grid (horizontally with images)
+    .mainCards: (optional) slice of main deck cards to show alongside single commander
+    .compact: boolean, if true use minimal styling for regular cards (default: true)
+    .cardLimit: max number of cards to show (default: 8)
+  
+  Renders an HTML table with hover-enabled card links.
+*/}}
+
+{{ $cards := .cards | default (slice) }}
+{{ $mainCards := .mainCards | default (slice) }}
+{{ $isCommander := .isCommander | default false }}
+{{ $compact := .compact | default true }}
+{{ $cardLimit := .cardLimit | default 8 }}
+
+{{ if gt (len $cards) 0 }}
+  {{ if $isCommander }}
+    {{/* Commander preview: horizontal layout with images */}}
+    {{ if eq (len $cards) 1 }}
+      {{/* Single commander: show commander on left, main cards on right */}}
+      <div class="commander-preview-row">
+        <table class="deck-table deck-commander deck-commander-single">
+          <tbody>
+            <tr>
+              <th class="commander-cell single">
+                {{ $c := index $cards 0 }}
+                {{ $cardName := replaceRE `^\s+|\s+$` "" $c.name }}
+                {{ if ne $cardName "" }}
+                  {{ $q := printf "!%s" $cardName | urlquery }}
+                  <div class="commander-name">
+                    <a class="deck-card-link" data-card="{{ $cardName }}" {{ if $c.scryfall_id }}data-scry-id="{{ $c.scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">{{ $cardName }}</a>
+                  </div>
+                  <div class="commander-art-wrap">
+                    <a href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">
+                      <img class="commander-art" alt="{{ $cardName }}" data-card="{{ $cardName }}" {{ if $c.scryfall_id }}data-scry-id="{{ $c.scryfall_id }}"{{ end }}>
+                    </a>
+                  </div>
+                {{ end }}
+              </th>
+            </tr>
+          </tbody>
+        </table>
+        
+        {{/* Main deck cards preview on the right */}}
+        {{ if gt (len $mainCards) 0 }}
+          <table class="deck-table deck-preview deck-preview-compact deck-preview-alongside">
+            <tbody>
+              {{ range first 13 $mainCards }}
+                <tr>
+                  <td class="count">{{ .count }}</td>
+                    {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+                  <td class="card">
+                    {{ if ne $safeName "" }}
+                      {{ $q := printf "!%s" $safeName | urlquery }}
+                      <a 
+                        class="deck-card-link" 
+                        data-card="{{ $safeName }}"
+                        {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }}
+                        href="https://scryfall.com/search?q={{ $q }}"
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >{{ $safeName }}</a>
+                    {{ end }}
+                  </td>
+                </tr>
+              {{ end }}
+            </tbody>
+          </table>
+        {{ end }}
+      </div>
+    {{ else }}
+      {{/* Two or more commanders: side by side (original layout) */}}
+      <table class="deck-table deck-commander">
+        <tbody>
+          {{ range $i, $c := $cards }}
+            {{ if eq (mod $i 2) 0 }}
+              <tr>
+                <th class="commander-cell">
+                  {{ $cardName := replaceRE `^\s+|\s+$` "" $c.name }}
+                  {{ if ne $cardName "" }}
+                    {{ $q := printf "!%s" $cardName | urlquery }}
+                    <div class="commander-name">
+                      <a class="deck-card-link" data-card="{{ $cardName }}" {{ if $c.scryfall_id }}data-scry-id="{{ $c.scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">{{ $cardName }}</a>
+                    </div>
+                    <div class="commander-art-wrap">
+                      <a href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">
+                        <img class="commander-art" alt="{{ $cardName }}" data-card="{{ $cardName }}" {{ if $c.scryfall_id }}data-scry-id="{{ $c.scryfall_id }}"{{ end }}>
+                      </a>
+                    </div>
+                  {{ end }}
+                </th>
+
+                {{ $next := add $i 1 }}
+                {{ if lt $next (len $cards) }}
+                  {{ $c2 := index $cards $next }}
+                  <th class="commander-cell">
+                    {{ $cardName2 := replaceRE `^\s+|\s+$` "" $c2.name }}
+                    {{ if ne $cardName2 "" }}
+                      {{ $q2 := printf "!%s" $cardName2 | urlquery }}
+                      <div class="commander-name">
+                        <a class="deck-card-link" data-card="{{ $cardName2 }}" {{ if $c2.scryfall_id }}data-scry-id="{{ $c2.scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q2 }}" target="_blank" rel="noopener noreferrer">{{ $cardName2 }}</a>
+                      </div>
+                      <div class="commander-art-wrap">
+                        <a href="https://scryfall.com/search?q={{ $q2 }}" target="_blank" rel="noopener noreferrer">
+                          <img class="commander-art" alt="{{ $cardName2 }}" data-card="{{ $cardName2 }}" {{ if $c2.scryfall_id }}data-scry-id="{{ $c2.scryfall_id }}"{{ end }}>
+                        </a>
+                      </div>
+                    {{ end }}
+                  </th>
+                {{ else }}
+                  <th class="commander-cell empty"></th>
+                {{ end }}
+              </tr>
+            {{ end }}
+          {{ end }}
+        </tbody>
+      </table>
+      
+      {{/* Main deck cards preview below commanders */}}
+      {{ if gt (len $mainCards) 0 }}
+        <div class="deck-preview-columns deck-preview-under-commander">
+          {{/* Column 1 */}}
+          <table class="deck-table deck-preview {{ if $compact }}deck-preview-compact{{ else }}deck-preview-full{{ end }}">
+            <tbody>
+              {{ range first 4 $mainCards }}
+                <tr>
+                  <td class="count">{{ .count }}</td>
+                  {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+                  <td class="card">
+                    {{ if ne $safeName "" }}
+                      <a 
+                        class="deck-card-link" 
+                        data-card="{{ $safeName }}"
+                        {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }}
+                        {{ $q := printf "!%s" $safeName | urlquery }}
+                        href="https://scryfall.com/search?q={{ $q }}"
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >{{ $safeName }}</a>
+                    {{ end }}
+                  </td>
+                  <td class="mana-cell">{{/* Client-side fetch populates mana */}}</td>
+                </tr>
+              {{ end }}
+            </tbody>
+          </table>
+          {{/* Column 2 */}}
+          <table class="deck-table deck-preview {{ if $compact }}deck-preview-compact{{ else }}deck-preview-full{{ end }}">
+            <tbody>
+              {{ range (first 8 $mainCards | after 4) }}
+                <tr>
+                  <td class="count">{{ .count }}</td>
+                  {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+                  <td class="card">
+                    {{ if ne $safeName "" }}
+                      <a 
+                        class="deck-card-link" 
+                        data-card="{{ $safeName }}"
+                        {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }}
+                        {{ $q := printf "!%s" $safeName | urlquery }}
+                        href="https://scryfall.com/search?q={{ $q }}"
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >{{ $safeName }}</a>
+                    {{ end }}
+                  </td>
+                  <td class="mana-cell">{{/* Client-side fetch populates mana */}}</td>
+                </tr>
+              {{ end }}
+            </tbody>
+          </table>
+        </div>
+      {{ end }}
+    {{ end }}
+  {{ else }}
+    {{/* Regular card preview: two-column layout */}}
+    <div class="deck-preview-columns">
+      {{/* Column 1 */}}
+      <table class="deck-table deck-preview {{ if $compact }}deck-preview-compact{{ else }}deck-preview-full{{ end }}">
+        <tbody>
+          {{ range first 13 $cards }}
+            <tr>
+              <td class="count">{{ .count }}</td>
+              {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+              <td class="card">
+                {{ if ne $safeName "" }}
+                  <a 
+                    class="deck-card-link" 
+                    data-card="{{ $safeName }}"
+                    {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }}
+                        {{ $q := printf "!%s" $safeName | urlquery }}
+                        href="https://scryfall.com/search?q={{ $q }}"
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >{{ $safeName }}</a>
+                {{ end }}
+              </td>
+              <td class="mana-cell">{{/* Client-side fetch populates mana */}}</td>
+            </tr>
+          {{ end }}
+        </tbody>
+      </table>
+      {{/* Column 2 */}}
+      {{ if gt (len $cards) 13 }}
+        <table class="deck-table deck-preview {{ if $compact }}deck-preview-compact{{ else }}deck-preview-full{{ end }}">
+          <tbody>
+            {{ range (first 26 $cards | after 13) }}
+              <tr>
+                <td class="count">{{ .count }}</td>
+                {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+                <td class="card">
+                  {{ if ne $safeName "" }}
+                    <a 
+                      class="deck-card-link" 
+                      data-card="{{ $safeName }}"
+                      {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }}
+                      {{ $q := printf "!%s" $safeName | urlquery }}
+                      href="https://scryfall.com/search?q={{ $q }}"
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >{{ $safeName }}</a>
+                  {{ end }}
+                </td>
+                <td class="mana-cell">{{/* Client-side fetch populates mana */}}</td>
+              </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      {{ end }}
+    </div>
+  {{ end }}
+{{ else }}
+  <p class="deck-preview-empty">No cards found in preview.</p>
+{{ end }}

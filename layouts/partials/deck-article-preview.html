@@ -1,0 +1,35 @@
+{{/*
+  deck-article-preview.html
+
+  Renders a complete deck article preview: title heading, metadata (date/format/tags/description),
+  card preview table, and a "View Deck" link.
+
+  Input (dict):
+    .deck        object  Deck entry from decks.yaml (.title, .slug, .file, .date, .tags, .description)
+    .titleLevel  string  HTML heading tag to use for the title (default: "h1")
+*/}}
+{{ $deck := .deck }}
+{{ $titleLevel := .titleLevel | default "h1" }}
+{{ $parsed := partial "deck-parse.html" (dict "file" $deck.file) }}
+
+{{ printf "<%s class=\"post-title\">" $titleLevel | safeHTML }}
+  <a href="/decks/{{ $deck.slug }}/">{{ $deck.title | markdownify }}</a>
+{{ printf "</%s>" $titleLevel | safeHTML }}
+
+{{ partial "deck-meta.html" (dict "deck" $deck "format" $parsed.format) }}
+
+<div class="post-content">
+  {{ if gt (len $parsed.comm) 0 }}
+    {{ if eq (len $parsed.comm) 1 }}
+      {{ partial "deck-preview-table.html" (dict "cards" $parsed.comm "mainCards" $parsed.main "isCommander" true "cardLimit" 4) }}
+    {{ else }}
+      {{ partial "deck-preview-table.html" (dict "cards" $parsed.comm "mainCards" $parsed.main "isCommander" true "cardLimit" 2) }}
+    {{ end }}
+  {{ else if gt (len $parsed.main) 0 }}
+    {{ partial "deck-preview-table.html" (dict "cards" $parsed.main "compact" true "cardLimit" 8) }}
+  {{ end }}
+</div>
+
+<div>
+  <a class="button" href="/decks/{{ $deck.slug }}/">View Deck →</a>
+</div>

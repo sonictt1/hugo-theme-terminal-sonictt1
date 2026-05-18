@@ -1,0 +1,23 @@
+{{ define "main" }}
+<h1>Decks</h1>
+
+{{ with (index $.Site.Data "decks") }}
+  {{ if .decks }}
+    {{/* Sort decks by date descending */}}
+    {{ $sorted := sort .decks "date" "desc" }}
+
+    <div class="posts">
+      {{ range $sorted }}
+      <article class="post on-list">
+        {{ partial "deck-article-preview.html" (dict "deck" . "titleLevel" "h2") }}
+      </article>
+      {{ end }}
+    </div>
+  {{ else }}
+    <p>No decks found.</p>
+  {{ end }}
+{{ else }}
+  <p>No deck data available.</p>
+{{ end }}
+
+{{ end }}

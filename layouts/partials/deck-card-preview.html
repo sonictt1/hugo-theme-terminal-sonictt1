@@ -1,0 +1,128 @@
+{{/*
+  deck-card-preview.html
+  
+  Parses a .deck file and extracts cards for preview display.
+  
+  Context variables expected:
+    .deckFile: path to .deck file (e.g., "static/decks/sample.deck")
+    .cardLimit: max number of non-commander cards to show (default: 8)
+    .showBothCommanders: boolean, if true show both commanders; if false, show first 8 cards (default: true)
+  
+  Returns a map with:
+    commanders: slice of commander cards
+    cards: slice of preview cards (first N non-commanders)
+*/}}
+
+{{ $deckFile := .deckFile | default "" }}
+{{ $cardLimit := .cardLimit | default 8 }}
+{{ $showBothCommanders := .showBothCommanders | default true }}
+
+{{ $result := dict "commanders" (slice) "cards" (slice) "error" "" }}
+
+{{ if eq $deckFile "" }}
+  {{ $result = merge $result (dict "error" "No deck file provided") }}
+{{ else }}
+  {{ $text := "" }}
+  {{ $fileExists := false }}
+  
+  {{/* Try to read the file */}}
+  {{ with $deckFile }}
+    {{ $text = readFile . }}
+    {{ $fileExists = true }}
+  {{ end }}
+  
+  {{ if not $fileExists }}
+    {{ $result = merge $result (dict "error" (printf "Could not read file: %s" $deckFile)) }}
+  {{ else }}
+    {{ $text = replaceRE "\r\n" "\n" $text }}
+    {{ $lines := split $text "\n" }}
+    
+    {{ $main := slice }}
+    {{ $side := slice }}
+    {{ $comm := slice }}
+    
+    {{/* Parse CSV .deck format */}}
+    {{ if hasSuffix $deckFile ".deck" }}
+      {{ range $i, $line := $lines }}
+        {{ $ln := replaceRE `^\s+|\s+$` "" $line }}
+        {{ if eq $ln "" }}{{ continue }}{{ end }}
+        
+        {{ $tokens := findRE `"[^"]*"|[^,]+` $ln }}
+        {{ $fields := slice }}
+        {{ range $tokens }}
+          {{ $tok := replaceRE `^\s+|\s+$` "" . }}
+          {{ if and (hasPrefix $tok "\"") (hasSuffix $tok "\"") }}
+            {{ $tok = replaceRE `^\"|\"$` "" $tok }}
+            {{ $tok = replace $tok `""` `"` }}
+          {{ end }}
+          {{ $fields = $fields | append $tok }}
+        {{ end }}
+        
+        {{ $count := "1" }}
+        {{ if ge (len $fields) 1 }}{{ $count = index $fields 0 }}{{ end }}
+        {{ $name := "" }}
+        {{ if ge (len $fields) 2 }}{{ $name = index $fields 1 }}{{ end }}
+        {{ $category := "" }}
+        {{ $scryid := "" }}
+        
+        {{ if ge (len $fields) 4 }}
+          {{ $category = index $fields 2 }}
+          {{ $scryid = index $fields 3 }}
+        {{ else if eq (len $fields) 3 }}
+          {{ $third := index $fields 2 }}
+          {{ if findRE `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$` $third }}
+            {{ $scryid = $third }}
+          {{ else }}
+            {{ $category = $third }}
+          {{ end }}
+        {{ end }}
+        
+        {{ $lc := lower $category }}
+        {{ if eq $lc "commander" }}
+          {{ $comm = $comm | append (dict "count" $count "name" $name "category" $category "scryfall_id" $scryid) }}
+        {{ else if or (eq $lc "sideboard") (eq $lc "sb") }}
+          {{ $side = $side | append (dict "count" $count "name" $name "category" $category "scryfall_id" $scryid) }}
+        {{ else }}
+          {{ $main = $main | append (dict "count" $count "name" $name "category" $category "scryfall_id" $scryid) }}
+        {{ end }}
+      {{ end }}
+    {{ else }}
+      {{/* Plain text parsing (backwards compatible) */}}
+      {{ range $i, $line := $lines }}
+        {{ $ln := replaceRE `^\s+|\s+$` "" $line }}
+        {{ if eq $ln "" }}{{ continue }}{{ end }}
+        {{ $low := lower $ln }}
+        {{ if or (hasPrefix $low "sideboard:") (hasPrefix $low "sb:") }}
+          {{ $ln = replaceRE `(?i)^(sideboard:|sb:)\s*` "" $ln }}
+          {{ $ln = replaceRE `^\s+|\s+$` "" $ln }}
+          {{ $parts := split (replaceRE `^\s*([0-9]+)[xX]?\s+(.*\S)\s*$` "$1|$2" $ln) "|" }}
+          {{ $count := index $parts 0 }}
+          {{ $name := index $parts 1 }}
+          {{ $side = $side | append (dict "count" $count "name" $name "category" "sideboard" "scryfall_id" "") }}
+        {{ else }}
+          {{ $parts := split (replaceRE `^\s*([0-9]+)[xX]?\s+(.*\S)\s*$` "$1|$2" $ln) "|" }}
+          {{ $count := index $parts 0 }}
+          {{ $name := index $parts 1 }}
+          {{ $main = $main | append (dict "count" $count "name" $name "category" "" "scryfall_id" "") }}
+        {{ end }}
+      {{ end }}
+    {{ end }}
+    
+    {{/* Determine what to show */}}
+    {{ $previewCards := slice }}
+    
+    {{ if gt (len $comm) 0 }}
+      {{/* Show commanders */}}
+      {{ $previewCards = $comm }}
+    {{ else }}
+      {{/* Show first N cards from main deck */}}
+      {{ if gt $cardLimit 0 }}
+        {{ $previewCards = first $cardLimit $main }}
+      {{ end }}
+    {{ end }}
+    
+    {{ $result = merge $result (dict "commanders" $comm "cards" $previewCards) }}
+  {{ end }}
+{{ end }}
+
+{{ return $result }}

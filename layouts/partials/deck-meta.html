@@ -1,0 +1,30 @@
+{{/*
+  deck-meta.html
+
+  Renders a deck's metadata block: date, format badge, optional tags, optional description.
+
+  Input (dict):
+    .deck    object  Deck entry from decks.yaml (.date, .tags, .description)
+    .format  string  Format string extracted from the .deck file (e.g. "commander")
+*/}}
+{{ $deck := .deck }}
+{{ $format := .format | default "" }}
+
+<div class="post-meta">
+  <time class="post-date">{{- $deck.date -}}</time>
+  {{ if ne $format "" }}
+    <span class="deck-format">{{ $format }}</span>
+  {{ end }}
+</div>
+
+{{ if $deck.tags }}
+<span class="post-tags">
+  {{ range $deck.tags }}
+  #<a href="{{ (urlize (printf "tags/%s/" .)) | absLangURL }}">{{- . -}}</a>&nbsp;
+  {{ end }}
+</span>
+{{ end }}
+
+{{ if $deck.description }}
+<p>{{ $deck.description | markdownify }}</p>
+{{ end }}

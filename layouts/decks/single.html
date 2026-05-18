@@ -1,0 +1,146 @@
+{{ define "main" }}
+
+{{ $deckSlug := .File.BaseFileName }}
+{{ if eq $deckSlug "_index" }}
+  {{ $deckSlug = .Parent.URL | strings.TrimPrefix "/" | strings.TrimSuffix "/" }}
+{{ end }}
+
+{{ $deck := "" }}
+{{ with (index $.Site.Data "decks") }}
+  {{ if .decks }}
+    {{ range .decks }}
+      {{ if eq .slug $deckSlug }}
+        {{ $deck = . }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{ if eq $deck "" }}
+  <article class="post">
+    <h1>Deck Not Found</h1>
+    <p>The requested deck could not be found.</p>
+  </article>
+{{ else }}
+  <article class="post">
+    <h1 class="post-title">
+      <a href="/decks/{{ $deck.slug }}/">{{ $deck.title | markdownify }}</a>
+    </h1>
+
+    {{ $parsed := partial "deck-parse.html" (dict "file" $deck.file) }}
+
+    {{ partial "deck-meta.html" (dict "deck" $deck "format" $parsed.format) }}
+
+    <div class="post-content">
+      {{ if $deck.description }}
+        <p>{{ $deck.description | markdownify }}</p>
+      {{ end }}
+
+      {{ .Content }}
+
+      {{/* If no content, render full deck table */}}
+      {{ if eq (len .Content) 0 }}
+        {{ if $deck.file }}
+          <div class="deck-table-wrap" id="deck">
+            {{ if gt (len $parsed.comm) 0 }}
+              <h3>Commander</h3>
+              {{ if eq (len $parsed.comm) 1 }}
+                {{ $c := index $parsed.comm 0 }}
+                <table class="deck-table deck-commander deck-commander-single">
+                  <tbody>
+                    <tr>
+                      <th class="commander-cell single">
+                        {{ $cardName := replaceRE `^\s+|\s+$` "" $c.name }}
+                        {{ if ne $cardName "" }}
+                          {{ $q := printf "!%s" $cardName | urlquery }}
+                          <div class="commander-name"><a class="deck-card-link" data-card="{{ $cardName }}" {{ if $c.scryfall_id }}data-scry-id="{{ $c.scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">{{ $cardName }}</a></div>
+                          <div class="commander-art-wrap"><a href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer"><img class="commander-art" alt="{{ $cardName }}" data-card="{{ $cardName }}" {{ if $c.scryfall_id }}data-scry-id="{{ $c.scryfall_id }}"{{ end }}></a></div>
+                        {{ end }}
+                      </th>
+                    </tr>
+                  </tbody>
+                </table>
+              {{ else }}
+                <table class="deck-table deck-commander">
+                  <tbody>
+                    {{ range $i, $c := $parsed.comm }}
+                      {{ if eq (mod $i 2) 0 }}
+                        <tr>
+                          <th class="commander-cell">
+                            {{ $cardName := replaceRE `^\s+|\s+$` "" $c.name }}
+                            {{ if ne $cardName "" }}
+                              {{ $q := printf "!%s" $cardName | urlquery }}
+                              <div class="commander-name"><a class="deck-card-link" data-card="{{ $cardName }}" {{ if $c.scryfall_id }}data-scry-id="{{ $c.scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">{{ $cardName }}</a></div>
+                              <div class="commander-art-wrap"><a href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer"><img class="commander-art" alt="{{ $cardName }}" data-card="{{ $cardName }}" {{ if $c.scryfall_id }}data-scry-id="{{ $c.scryfall_id }}"{{ end }}></a></div>
+                            {{ end }}
+                          </th>
+
+                          {{ $next := add $i 1 }}
+                          {{ if lt $next (len $parsed.comm) }}
+                            {{ $c2 := index $parsed.comm $next }}
+                            <th class="commander-cell">
+                              {{ $cardName2 := replaceRE `^\s+|\s+$` "" $c2.name }}
+                              {{ if ne $cardName2 "" }}
+                                {{ $q2 := printf "!%s" $cardName2 | urlquery }}
+                                <div class="commander-name"><a class="deck-card-link" data-card="{{ $cardName2 }}" {{ if $c2.scryfall_id }}data-scry-id="{{ $c2.scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q2 }}" target="_blank" rel="noopener noreferrer">{{ $cardName2 }}</a></div>
+                                <div class="commander-art-wrap"><a href="https://scryfall.com/search?q={{ $q2 }}" target="_blank" rel="noopener noreferrer"><img class="commander-art" alt="{{ $cardName2 }}" data-card="{{ $cardName2 }}" {{ if $c2.scryfall_id }}data-scry-id="{{ $c2.scryfall_id }}"{{ end }}></a></div>
+                              {{ end }}
+                            </th>
+                          {{ else }}
+                            <th class="commander-cell empty"></th>
+                          {{ end }}
+                        </tr>
+                      {{ end }}
+                    {{ end }}
+                  </tbody>
+                </table>
+              {{ end }}
+            {{ end }}
+
+            {{ if gt (len $parsed.main) 0 }}
+              <h3>Deck</h3>
+              <table class="deck-table">
+                <thead>
+                  <tr><th>#</th><th>Card</th><th>Mana</th></tr>
+                </thead>
+                <tbody>
+                  {{ range $parsed.main }}
+                    <tr>
+                      <td class="count">{{ .count }}</td>
+                      {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+                      {{ $q := printf "!%s" $safeName | urlquery }}
+                      <td class="card">{{ if ne $safeName "" }}<a class="deck-card-link" data-card="{{ $safeName }}" {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">{{ $safeName }}</a>{{ end }}</td>
+                      <td class="mana-cell">{{ if eq (lower .category) "land" }}N/A{{ end }}</td>
+                    </tr>
+                  {{ end }}
+                </tbody>
+              </table>
+            {{ end }}
+
+            {{ if gt (len $parsed.side) 0 }}
+              <h4>Sideboard</h4>
+              <table class="deck-table deck-sideboard">
+                <thead>
+                  <tr><th>#</th><th>Card</th><th>Mana</th></tr>
+                </thead>
+                <tbody>
+                  {{ range $parsed.side }}
+                    <tr>
+                      <td class="count">{{ .count }}</td>
+                      {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+                      {{ $q := printf "!%s" $safeName | urlquery }}
+                      <td class="card">{{ if ne $safeName "" }}<a class="deck-card-link" data-card="{{ $safeName }}" {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">{{ $safeName }}</a>{{ end }}</td>
+                      <td class="mana-cell">{{/* Client-side fetch populates mana */}}</td>
+                    </tr>
+                  {{ end }}
+                </tbody>
+              </table>
+            {{ end }}
+          </div>
+        {{ end }}
+      {{ end }}
+    </div>
+  </article>
+{{ end }}
+
+{{ end }}
