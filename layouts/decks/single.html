@@ -98,23 +98,55 @@
             {{ end }}
 
             {{ if gt (len $parsed.main) 0 }}
-              <h3>Deck</h3>
-              <table class="deck-table">
-                <thead>
-                  <tr><th>#</th><th>Card</th><th>Mana</th></tr>
-                </thead>
-                <tbody>
-                  {{ range $parsed.main }}
-                    <tr>
-                      <td class="count">{{ .count }}</td>
-                      {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
-                      {{ $q := printf "!%s" $safeName | urlquery }}
-                      <td class="card">{{ if ne $safeName "" }}<a class="deck-card-link" data-card="{{ $safeName }}" {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">{{ $safeName }}</a>{{ end }}</td>
-                      <td class="mana-cell">{{ if eq (lower .category) "land" }}N/A{{ end }}</td>
-                    </tr>
+              {{/* Group main deck by category */}}
+              {{ $mainByCategory := dict }}
+              {{ $categoryOrder := slice }}
+              
+              {{ range $parsed.main }}
+                {{ $cat := replaceRE `^\s+|\s+$` "" .category }}
+                {{ if eq $cat "" }}
+                  {{ $cat = "Other" }}
+                {{ end }}
+                
+                {{/* Check if category already tracked */}}
+                {{ $exists := false }}
+                {{ range $categoryOrder }}
+                  {{ if eq . $cat }}
+                    {{ $exists = true }}
                   {{ end }}
-                </tbody>
-              </table>
+                {{ end }}
+                
+                {{ if not $exists }}
+                  {{ $mainByCategory = merge $mainByCategory (dict $cat (slice)) }}
+                  {{ $categoryOrder = $categoryOrder | append $cat }}
+                {{ end }}
+                
+                {{ $cardsInCat := index $mainByCategory $cat }}
+                {{ $cardsInCat = $cardsInCat | append . }}
+                {{ $mainByCategory = merge $mainByCategory (dict $cat $cardsInCat) }}
+              {{ end }}
+              
+              {{/* Render each category as its own table */}}
+              {{ range $cat := $categoryOrder }}
+                {{ $cardsInCat := index $mainByCategory $cat }}
+                <h3>{{ $cat }}</h3>
+                <table class="deck-table">
+                  <thead>
+                    <tr><th>#</th><th>Card</th>{{ if ne $cat "Land" }}<th>Mana</th>{{ end }}</tr>
+                  </thead>
+                  <tbody>
+                    {{ range $cardsInCat }}
+                      <tr>
+                        <td class="count">{{ .count }}</td>
+                        {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+                        {{ $q := printf "!%s" $safeName | urlquery }}
+                        <td class="card">{{ if ne $safeName "" }}<a class="deck-card-link" data-card="{{ $safeName }}" {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">{{ $safeName }}</a>{{ end }}</td>
+                        {{ if ne $cat "Land" }}<td class="mana-cell">{{/* Client-side fetch populates mana */}}</td>{{ end }}
+                      </tr>
+                    {{ end }}
+                  </tbody>
+                </table>
+              {{ end }}
             {{ end }}
 
             {{ if gt (len $parsed.side) 0 }}
