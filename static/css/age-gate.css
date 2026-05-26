@@ -1,0 +1,134 @@
+/* ============================================================
+   Age Gate Overlay — uses only theme CSS variables
+   Follows the same pattern as deck-hover.css
+   ============================================================ */
+
+#age-gate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: var(--background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.age-gate-card {
+  max-width: 620px;
+  width: 100%;
+  border: 4px solid var(--accent);
+  padding: 2rem;
+  font-family: "Fira Code", Monaco, Consolas, "Ubuntu Mono", monospace;
+}
+
+.age-gate-card h2 {
+  color: var(--accent);
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.35rem;
+  letter-spacing: 0;
+}
+
+.age-gate-card p {
+  margin-bottom: 1rem;
+}
+
+.age-gate-region-notice {
+  border-top: 1px solid var(--accent);
+  border-bottom: 1px solid var(--accent);
+  padding: 0.8rem 0;
+  font-size: 0.88rem;
+  color: color-mix(in srgb, var(--foreground) 75%, transparent);
+  margin-bottom: 1.5rem;
+}
+
+.age-gate-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 600px) {
+  .age-gate-buttons {
+    flex-direction: row;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+.age-gate-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 140px;
+}
+
+.age-gate-option button {
+  width: 100%;
+}
+
+.age-gate-hint {
+  font-size: 0.78rem;
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+  line-height: 1.4;
+}
+
+/* "Return to Homepage" — uses the filled accent style to stand out as the safe exit */
+.age-gate-return {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+}
+
+/* 18+ badge used in /all/ mixed feed */
+.post-adult-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--background);
+  background: var(--accent);
+  padding: 1px 6px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Stabilize button interaction states across the site — prevent box model collapse */
+button,
+.button,
+a.button,
+.read-more {
+  box-sizing: border-box !important;
+  padding: 5px 18px !important;
+  border: 4px solid var(--accent) !important;
+  transition: background 0.15s linear, border-color 0.15s linear;
+  display: inline-block;
+}
+
+button:hover,
+.button:hover,
+a.button:hover,
+.read-more:hover,
+button:active,
+.button:active,
+a.button:active,
+.read-more:active {
+  /* Lock box model — no growth on interaction */
+  padding: 5px 18px !important;
+  border: 4px solid var(--accent) !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
+button:focus-visible,
+.button:focus-visible,
+a.button:focus-visible,
+.read-more:focus-visible {
+  /* Flush outline — no offset inflation */
+  outline: 1px solid var(--accent) !important;
+  outline-offset: -1px !important;
+  padding: 5px 18px !important;
+  border: 4px solid var(--accent) !important;
+}

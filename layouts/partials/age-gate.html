@@ -1,0 +1,46 @@
+{{/*
+  age-gate.html — reusable 18+ age verification overlay.
+
+  Renders only on pages in the "adult" or "all" sections.
+  CSS and JS are loaded conditionally via extended_head.html.
+  Activation logic lives in /js/age-gate.js.
+
+  State list (as of 2025–2026 — review periodically as laws change):
+  Louisiana, Utah, Arkansas, Mississippi, Virginia, Montana, Texas,
+  North Carolina, Indiana, Idaho, Kansas, Kentucky, Nebraska, Tennessee,
+  Florida, Alabama, Georgia, Oklahoma, South Carolina
+*/}}
+{{ if or (eq .Section "adult") (eq .Section "all") }}
+<div id="age-gate-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
+  <div class="age-gate-card">
+    <h2 id="age-gate-title">⚠ 18+ Content Warning</h2>
+    <p>
+      This section contains adult content intended for readers <strong>18 years of age or older</strong>.
+      By continuing, you confirm that you are at least 18 years old and that accessing this content
+      is legal under the laws of your jurisdiction.
+    </p>
+    <p class="age-gate-region-notice">
+      <strong>Regional notice:</strong> If you are accessing this site from
+      <strong>Louisiana, Utah, Arkansas, Mississippi, Virginia, Montana, Texas,
+      North Carolina, Indiana, Idaho, Kansas, Kentucky, Nebraska, Tennessee,
+      Florida, Alabama, Georgia, Oklahoma,</strong> or <strong>South Carolina</strong>,
+      local law may require age verification that this site is currently unable to provide.
+      Please navigate away if you are in one of these jurisdictions.
+    </p>
+    <div class="age-gate-buttons">
+      <div class="age-gate-option">
+        <button id="age-gate-accept-cookie" type="button">Accept &amp; Remember Me</button>
+        <span class="age-gate-hint">Sets a cookie for 90 days. We&rsquo;ll remember your choice next time.</span>
+      </div>
+      <div class="age-gate-option">
+        <button id="age-gate-accept-session" type="button">Accept for This Tab</button>
+        <span class="age-gate-hint">No cookie stored. You&rsquo;ll need to accept again in new tabs.</span>
+      </div>
+      <div class="age-gate-option">
+        <a href="/" class="button age-gate-return">Return to Homepage</a>
+        <span class="age-gate-hint">&nbsp;</span>
+      </div>
+    </div>
+  </div>
+</div>
+{{ end }}
