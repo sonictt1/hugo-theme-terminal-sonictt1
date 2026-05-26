@@ -15,14 +15,10 @@
 
 {{ $menu := resources.Get "js/menu.js" | js.Build }}
 {{ $cp := resources.Get "js/code.js" | js.Build }}
-{{ $ag := resources.Get "js/age-gate.js" | js.Build }}
 
-{{ $bundle := slice $menu $cp $ag | resources.Concat "bundle.js" | resources.Minify }}
+{{ $bundle := slice $menu $cp | resources.Concat "bundle.js" | resources.Minify }}
 
 <script type="text/javascript" src="{{ $bundle.RelPermalink }}"></script>
-
-<!-- Age-gate overlay for 18+ content sections -->
-{{ partial "age-gate.html" . }}
 
 <!-- Extended footer section-->
 {{ partial "extended_footer.html" . }}
