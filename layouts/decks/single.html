@@ -98,37 +98,37 @@
             {{ end }}
 
             {{ if gt (len $parsed.main) 0 }}
-              {{/* Group main deck cards by category */}}
-              {{ $byCategory := dict }}
+              {{/* Group and display main deck cards by category */}}
+              {{ $processedCategories := slice }}
+              
               {{ range $parsed.main }}
                 {{ $cat := .category | default "Other" }}
-                {{ if in (keys $byCategory) $cat }}
-                  {{ $existing := index $byCategory $cat }}
-                  {{ $byCategory = merge $byCategory (dict $cat (append $existing .)) }}
-                {{ else }}
-                  {{ $byCategory = merge $byCategory (dict $cat (slice .)) }}
+                
+                {{/* If we haven't processed this category yet, output its section */}}
+                {{ if not (in $processedCategories $cat) }}
+                  {{ $processedCategories = $processedCategories | append $cat }}
+                  
+                  <h3>{{ $cat }}</h3>
+                  <table class="deck-table">
+                    <thead>
+                      <tr><th>#</th><th>Card</th><th>Mana</th></tr>
+                    </thead>
+                    <tbody>
+                      {{/* Output all cards in this category */}}
+                      {{ range $parsed.main }}
+                        {{ if eq (.category | default "Other") $cat }}
+                          <tr>
+                            <td class="count">{{ .count }}</td>
+                            {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
+                            {{ $q := printf "!%s" $safeName | urlquery }}
+                            <td class="card">{{ if ne $safeName "" }}<a class="deck-card-link" data-card="{{ $safeName }}" {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">{{ $safeName }}</a>{{ end }}</td>
+                            <td class="mana-cell">{{ if eq (lower .category) "land" }}N/A{{ end }}</td>
+                          </tr>
+                        {{ end }}
+                      {{ end }}
+                    </tbody>
+                  </table>
                 {{ end }}
-              {{ end }}
-
-              {{/* Display each category as a separate section */}}
-              {{ range $category, $cards := $byCategory }}
-                <h3>{{ $category }}</h3>
-                <table class="deck-table">
-                  <thead>
-                    <tr><th>#</th><th>Card</th><th>Mana</th></tr>
-                  </thead>
-                  <tbody>
-                    {{ range $cards }}
-                      <tr>
-                        <td class="count">{{ .count }}</td>
-                        {{ $safeName := replaceRE `^\s+|\s+$` "" .name }}
-                        {{ $q := printf "!%s" $safeName | urlquery }}
-                        <td class="card">{{ if ne $safeName "" }}<a class="deck-card-link" data-card="{{ $safeName }}" {{ if .scryfall_id }}data-scry-id="{{ .scryfall_id }}"{{ end }} href="https://scryfall.com/search?q={{ $q }}" target="_blank" rel="noopener noreferrer">{{ $safeName }}</a>{{ end }}</td>
-                        <td class="mana-cell">{{ if eq (lower .category) "land" }}N/A{{ end }}</td>
-                      </tr>
-                    {{ end }}
-                  </tbody>
-                </table>
               {{ end }}
             {{ end }}
 
