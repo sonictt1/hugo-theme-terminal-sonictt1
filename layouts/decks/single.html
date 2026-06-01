@@ -102,8 +102,12 @@
               {{ $byCategory := dict }}
               {{ range $parsed.main }}
                 {{ $cat := .category | default "Other" }}
-                {{ $existing := index $byCategory $cat | default slice }}
-                {{ $byCategory = merge $byCategory (dict $cat (append $existing .)) }}
+                {{ if in (keys $byCategory) $cat }}
+                  {{ $existing := index $byCategory $cat }}
+                  {{ $byCategory = merge $byCategory (dict $cat (append $existing .)) }}
+                {{ else }}
+                  {{ $byCategory = merge $byCategory (dict $cat (slice .)) }}
+                {{ end }}
               {{ end }}
 
               {{/* Display each category as a separate section */}}
