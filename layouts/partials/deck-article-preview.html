@@ -16,7 +16,7 @@
   <a href="/decks/{{ $deck.slug }}/">{{ $deck.title | markdownify }}</a>
 {{ printf "</%s>" $titleLevel | safeHTML }}
 
-{{ partial "deck-meta.html" (dict "deck" $deck "format" $parsed.format) }}
+{{ partial "deck-meta.html" (dict "deck" $deck "format" $parsed.format "bracket" $parsed.bracket) }}
 
 <div class="post-content">
   {{ if gt (len $parsed.comm) 0 }}

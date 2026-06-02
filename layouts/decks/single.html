@@ -29,7 +29,7 @@
 
     {{ $parsed := partial "deck-parse.html" (dict "file" $deck.file) }}
 
-    {{ partial "deck-meta.html" (dict "deck" $deck "format" $parsed.format) }}
+    {{ partial "deck-meta.html" (dict "deck" $deck "format" $parsed.format "bracket" $parsed.bracket) }}
 
     <div class="post-content">
       {{ if $deck.description }}

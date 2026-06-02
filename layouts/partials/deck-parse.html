@@ -22,6 +22,7 @@
 {{ $main := slice }}
 {{ $side := slice }}
 {{ $format := "" }}
+{{ $bracket := "" }}
 
 {{ if ne $file "" }}
   {{ $text := readFile $file }}
@@ -31,6 +32,12 @@
   {{ $formatMatches := findRE `(?m)^format\s*:\s*"[^"]+"|(?m)^format\s*:\s*[^\n]+` $text }}
   {{ if gt (len $formatMatches) 0 }}
     {{ $format = replaceRE `^\s+|\s+$` "" (replaceRE `(?i)^format\s*:\s*\"?|\"?$` "" (index $formatMatches 0)) }}
+  {{ end }}
+
+  {{/* Extract bracket metadata (number), optional */}}
+  {{ $bracketMatches := findRE `(?m)^bracket\s*:\s*"?[0-9]+"?|(?m)^bracket\s*:\s*[^\n]+` $text }}
+  {{ if gt (len $bracketMatches) 0 }}
+    {{ $bracket = replaceRE `^\s+|\s+$` "" (replaceRE `(?i)^bracket\s*:\s*\"?|\"?$` "" (index $bracketMatches 0)) }}
   {{ end }}
 
   {{ $lines := split $text "\n" }}
@@ -83,4 +90,4 @@
   {{ end }}
 {{ end }}
 
-{{ return (dict "comm" $comm "main" $main "side" $side "format" $format) }}
+{{ return (dict "comm" $comm "main" $main "side" $side "format" $format "bracket" $bracket) }}
