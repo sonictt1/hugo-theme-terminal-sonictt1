@@ -42,6 +42,10 @@
   margin: 0 8px;
 }
 
+.post-meta > .deck-meta-right::before {
+  content: none;
+}
+
 .post-title {
   position: relative;
   color: var(--accent);
