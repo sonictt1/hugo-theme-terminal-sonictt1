@@ -155,6 +155,71 @@
         {{ end }}
       {{ end }}
     </div>
+
+    {{/* Twitch clips and highlights */}}
+    {{ if $deck }}
+      {{ $clips := index $deck "twitch_clips" }}
+      {{ $highlights := index $deck "twitch_highlights" }}
+
+      {{/* Extract parent domain from site BaseURL for Twitch embed security */}}
+      {{ $parent := "localhost" }}
+      {{ with $.Site.BaseURL }}
+        {{ $url := urls.Parse . }}
+        {{ with $url.Host }}
+          {{ $parent = . }}
+        {{ end }}
+      {{ end }}
+
+      {{ if or (and $clips (gt (len $clips) 0)) (and $highlights (gt (len $highlights) 0)) }}
+        <div class="deck-twitch-sections" style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap;margin-top:2rem;padding-top:2rem;border-top:1px solid var(--accent);">
+          {{ if and $clips (gt (len $clips) 0) }}
+            <div class="deck-twitch-clips" style="flex:1;min-width:300px;">
+              <h3>Twitch Clips</h3>
+              {{ range $i, $c := $clips }}
+                {{ $clipID := $c }}
+                {{- if (strings.HasPrefix $c "http") -}}
+                  {{/* Extract clip ID from full URL */}}
+                  {{ $parts := split $c "/" }}
+                  {{ $clipID = index $parts (sub (len $parts) 1) }}
+                {{- end }}
+                <div style="margin-bottom:1rem;">
+                  <iframe 
+                    src="https://clips.twitch.tv/embed?clip={{ $clipID }}&parent={{ $parent }}" 
+                    height="300" 
+                    width="100%" 
+                    allowfullscreen="true"
+                    style="border:none;max-width:600px;">
+                  </iframe>
+                </div>
+              {{ end }}
+            </div>
+          {{ end }}
+
+          {{ if and $highlights (gt (len $highlights) 0) }}
+            <div class="deck-twitch-highlights" style="flex:1;min-width:300px;">
+              <h3>Highlights</h3>
+              {{ range $i, $h := $highlights }}
+                {{ $videoID := $h }}
+                {{- if (strings.HasPrefix $h "http") -}}
+                  {{/* Extract video ID from full URL */}}
+                  {{ $parts := split $h "/" }}
+                  {{ $videoID = index $parts (sub (len $parts) 1) }}
+                {{- end }}
+                <div style="margin-bottom:1rem;">
+                  <iframe 
+                    src="https://player.twitch.tv/?video={{ $videoID }}&parent={{ $parent }}&autoplay=false" 
+                    height="300" 
+                    width="100%" 
+                    allowfullscreen="true"
+                    style="border:none;max-width:600px;">
+                  </iframe>
+                </div>
+              {{ end }}
+            </div>
+          {{ end }}
+        </div>
+      {{ end }}
+    {{ end }}
   </article>
 {{ end }}
 
